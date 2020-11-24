@@ -1,97 +1,144 @@
-def prompt(text)
+require 'yaml'
+MESSAGES = YAML.load_file('calculator_messages.yml')
+
+$lang = 'en'
+def messages(message)
+  MESSAGES[$lang][message]
+end
+
+def prompt(text) # Helps program prompts stand out. For style only.
   puts "=> #{text}"
 end
 
-def valid_num?(number)
-  number.to_i != 0
+def integer?(number)
+  Integer(number, exception: false)
 end
 
-def operator_format_str(choice) #output formatting method. purly for looks
+def float?(number)
+  Float(number, exception: false)
+end
+
+def operator_format_str(choice) # output formatting method. For style only.
   case choice
   when '1'
-    'Adding'
+    prompt(messages('adding'))
   when '2'
-    'Subtracting'
+    prompt(messages('subtracting'))
   when '3'
-    'Multiplying'
+    prompt(messages('multiplying'))
   when '4'
-    'Dividing'
+    prompt(messages('dividing'))
   end
 end
 
+#LANGUAGE SELECTION MENU
+operator_lang = <<-MSG
+  Enter (1) For ENGLISH
+  Introduzca (2) Para ESPANOL
+MSG
+
+prompt(operator_lang)
+
+loop do
+  select = gets.chomp
+  if select == '1'
+    $lang = 'en'
+    break
+  elsif select == '2'
+    $lang = 'es'
+    break
+  else
+    prompt('Please enter a valid number')
+    prompt('Por favor, introduzca un número:')
+  end
+end
+
+#MAIN FUNCTION
 name = nil
-prompt('Welcome to our calculator! Enter your name:')
+prompt(messages('welcome_intro'))
 loop do
   name = gets.chomp
   if name.empty?
-    prompt('Please enter a valid name')
+    prompt(messages('name_error'))
   else
-    break 
+    break
   end
 end
 
-prompt("Welcome #{name}")
+prompt("#{messages('welcome')} #{name}")
 
 loop do # main loop of the program
-	num1 = nil
-	loop do # get/validate first number
-		prompt('Please enter a number:')
-		num1 = gets.chomp
-		if valid_num?(num1)
-			break
-		else
-			prompt('Something went wrong...')
-		end
-	end
-
-	num2 = nil
-	loop do # get/validate second number
-		prompt('Please enter a second number:')
-		num2 = gets.chomp
-		if valid_num?(num2)
-			break
-		else
-			prompt('Please enter a valid number')
-		end
+  num1 = nil
+  loop do # get/validate first number
+    prompt(messages('enter_num1'))
+    num1 = gets.chomp
+    if integer?(num1) || float?(num1)
+      break
+    else
+      prompt(messages('num_error'))
+    end
   end
-  
-  prompt("Okay! You've entered #{num1} and #{num2}")
 
-  operator_prompt = <<-MSG
-  Please select an operation:
-    1) Add
-    2) Subtract
-    3) Multiply
-    4) Divide
-  MSG
+  num2 = nil
+  loop do # get/validate second number
+    prompt(messages('enter_num2'))
+    num2 = gets.chomp
+    if integer?(num2) || float?(num2)
+      break
+    else
+      prompt(messages('num_error'))
+    end
+  end
 
-  prompt(operator_prompt)
+  prompt("#{messages('okay')} #{num1} #{messages('and')} #{num2}")
+
+prompt(messages('operator_prompt'))
+prompt(messages('add'))
+prompt(messages('subtract'))
+prompt(messages('multiply'))
+prompt(messages('divide'))
 
   choice = nil
-  loop do #user selects operation to perform w/ validation
+  loop do # user selects operation to perform w/ validation
     choice = gets.chomp
     break if %w(1 2 3 4).include?(choice)
   end
 
-prompt("#{operator_format_str(choice)} your answer...")
+  operator_format_str(choice)
 
-	result = case choice
-					 when '1'
-						num1.to_i + num2.to_i
-					 when '2'
-						num1.to_i - num2.to_i
-					 when '3'
-						num1.to_i * num2.to_i
-					 when '4'
-						num1.to_f / num2.to_f
-					 end
+  result =  case choice
+            when '1'
+              if float?(num1) || float?(num2)
+                num1.to_f + num2.to_f
+              else
+                num1.to_i + num2.to_i
+              end
+            when '2'
+              if float?(num1) || float?(num2)
+                num1.to_f - num2.to_f
+              else
+                num1.to_i - num2.to_i
+              end
+            when '3'
+              if float?(num1) || float?(num2)
+                num1.to_f * num2.to_f
+              else
+                num1.to_i * num2.to_i
+              end
+            when '4'
+              if num2.to_f != 0 
+              num1.to_f / num2.to_f
+              else
+              prompt(messages('division_error'))
+              messages('calc_error')
+              end
+            end
 
-	puts result
+  prompt("#{messages('answer?')} #{result}")
 
-	prompt('Would you like to run again? (enter Y to recalculate)')
-	answer = gets.chomp.downcase
-	break unless answer.start_with?('y')
+  prompt(messages('again?'))
+  answer = gets.chomp.downcase
+  break unless answer.start_with?('y')
 end
 
-prompt("Thanks #{name} for using our calculator!")
-
+prompt("#{messages('thanks')} #{name} #{messages('using_calc')}")
