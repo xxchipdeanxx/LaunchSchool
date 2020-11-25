@@ -1,4 +1,4 @@
-en:
+english:
   welcome_intro: 'Welcome to our calculator! Enter your name:'
   welcome: 'Welcome,'
   name_error: 'Please enter a valid name'
@@ -22,7 +22,8 @@ en:
   using_calc: ' for using our calculator!'
   answer?: 'Your answer is '
   calc_error: 'COULD NOT CALCULATE'
-es:
+  language: 'english'
+espanol:
   welcome_intro: '¡Bienvenido a nuestra calculadora! Introduzca su nombre:'
   welcome: 'Bienvenido,'
   name_error: 'Por favor ingrese un nombre valido:'
@@ -46,3 +47,4 @@ es:
   using_calc: 'por usar nuestra calculadora!'
   answer?: 'tu respuesta es '
   calc_error: 'NO PODRÍA CALCULAR'
+  language: 'espanol'

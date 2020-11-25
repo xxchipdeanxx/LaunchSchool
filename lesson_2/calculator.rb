@@ -1,12 +1,11 @@
 require 'yaml'
 MESSAGES = YAML.load_file('calculator_messages.yml')
 
-$lang = 'en'
 def messages(message)
-  MESSAGES[$lang][message]
+  MESSAGES[LANG][message]
 end
 
-def prompt(text) # Helps program prompts stand out. For style only.
+def prompt(text) # Helps program prompts stand out.
   puts "=> #{text}"
 end
 
@@ -18,7 +17,7 @@ def float?(number)
   Float(number, exception: false)
 end
 
-def operator_format_str(choice) # output formatting method. For style only.
+def operator_format_str(choice) # output formatting method.
   case choice
   when '1'
     prompt(messages('adding'))
@@ -31,31 +30,29 @@ def operator_format_str(choice) # output formatting method. For style only.
   end
 end
 
-#LANGUAGE SELECTION MENU
-operator_lang = <<-MSG
-  Enter (1) For ENGLISH
-  Introduzca (2) Para ESPANOL
-MSG
-
-prompt(operator_lang)
-
-loop do
-  select = gets.chomp
-  if select == '1'
-    $lang = 'en'
-    break
-  elsif select == '2'
-    $lang = 'es'
-    break
-  else
-    prompt('Please enter a valid number')
-    prompt('Por favor, introduzca un número:')
+def select_lang
+  lang_ary = MESSAGES.keys.sort
+  prompt('Please select a language:')
+  prompt('Por favor seleccione un idioma')
+  lang_ary.each do |key|
+    puts MESSAGES[key]['language']
   end
+
+  lang_select = nil
+  loop do
+    lang_select = gets.chomp.downcase
+    break if MESSAGES.keys.include?(lang_select)
+    prompt('Please select a valid language.')
+    prompt('Seleccione un idioma válido')
+  end
+  lang_select
 end
 
-#MAIN FUNCTION
-name = nil
+LANG = select_lang
+
+# MAIN FUNCTION
 prompt(messages('welcome_intro'))
+name = nil
 loop do
   name = gets.chomp
   if name.empty?
@@ -92,11 +89,11 @@ loop do # main loop of the program
 
   prompt("#{messages('okay')} #{num1} #{messages('and')} #{num2}")
 
-prompt(messages('operator_prompt'))
-prompt(messages('add'))
-prompt(messages('subtract'))
-prompt(messages('multiply'))
-prompt(messages('divide'))
+  prompt(messages('operator_prompt'))
+  prompt(messages('add'))
+  prompt(messages('subtract'))
+  prompt(messages('multiply'))
+  prompt(messages('divide'))
 
   choice = nil
   loop do # user selects operation to perform w/ validation
@@ -126,11 +123,11 @@ prompt(messages('divide'))
                 num1.to_i * num2.to_i
               end
             when '4'
-              if num2.to_f != 0 
-              num1.to_f / num2.to_f
+              if num2.to_f != 0
+                num1.to_f / num2.to_f
               else
-              prompt(messages('division_error'))
-              messages('calc_error')
+                prompt(messages('division_error'))
+                messages('calc_error')
               end
             end
 
