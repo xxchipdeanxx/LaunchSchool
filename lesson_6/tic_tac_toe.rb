@@ -1,35 +1,3 @@
-# Create a very simple version of tic tac toe in ruby.
-# There will be two players: a user and a computer
-
-#Input: a character 'X' or 'O'
-#Output: a board populated with previous selections
-
-## REFACTORING ##
-  #COMPUTER DEFENE#
-
-## CPU DEFENCE ##
-  # The computer should look to block a square if the two other
-  # square in the WINNING_MOVES set are occupied by the players
-  # If there is no imediate threat--the pick at random
-
-  # Two methods place_piece and assess_threat
-
-  #ASSESS THREAT#
-  #Input: board array
-  # 1. 'look' at the board and determine if the player has two pieces
-  #     places in a 'winning condition'
-  # 2. If a 'threat' is sensed then the cpu should place a piece to block
-
-  ## ALGO ##
-  # 1. create constant WINNING_COMBOS array that contains all winning empty_squares
-  # 2. Iterate through the board_hsh to see where player pieces are placed
-  #   - iterate through board hash and extract all k/v that contain player piece
-  #   - take all keys from player hsh and place them in an array player_squares
-  #   - array represents all squares the opposing player has a piece set
-  # 3. Compare where pieces are placed with all the winning conditions
-  #   - iterate through the WINNING_COMBOS array, set-by-set
-  #   - compare the square numbers from the combo to the players
-  #     -if 
 require 'pry'
 require 'pry-byebug'
 
@@ -41,6 +9,14 @@ WINNING_COMBOS = [[1,2,3], [4,5,6], [7,8,9]] +
 [[1,4,7], [2,5,8], [3,6,9]] +
 [[1,5,9], [3,5,7]]
 
+
+def tab_pad(num)
+  "\t" * num
+end
+
+def new_line
+  puts "\n"
+end
 
 def input_prompt
   print "\e[5m=>\e[0m"
@@ -75,12 +51,13 @@ def select_piece
     puts "Please select a valid piece"
   end
   usr_choice == 'x' ? X : O
+  # usr_choice.to_sym
 end
 
 def display_board(brd_hsh, score_hsh)
   clear_screen
-  puts "User Score: #{score_hsh[:player]}"
-  puts "CPU Score: #{score_hsh[:cpu]}"
+  puts "User(#{USER_PIECE}) Score: #{score_hsh[:player]}"
+  puts "CPU(#{CPU_PIECE}) Score: #{score_hsh[:cpu]}"
   puts"      |      |      "
   puts"   #{brd_hsh[1]}  |   #{brd_hsh[2]}  |   #{brd_hsh[3]}   "
   puts"      |      |      "
@@ -118,7 +95,8 @@ def empty_squares(brd_hsh)  #generates an array of available choices
 end
 
 def usr_select_square(brd_hsh)
-  puts "Where would you like to place your piece? #{joinor(empty_squares(brd_hsh))}"
+  puts "Where would you like to place your piece?"
+  puts "AVAILABLE SPACES: #{joinor(empty_squares(brd_hsh))}"
   loop do
     usr_choice = input_prompt
     if empty_squares(brd_hsh).include?(usr_choice.to_i)
@@ -131,19 +109,17 @@ def usr_select_square(brd_hsh)
   end
 end
 
-def cpu_select(brd_hsh) #ZERO logic at the moment. All randomized
-  if detect_threat?(brd_hsh)
-    square_to_block = assess_threat(brd_hsh)
-    if brd_hsh[square_to_block] == CPU_PIECE
-      cpu_select = empty_squares(brd_hsh).sample
-      brd_hsh[cpu_select] = CPU_PIECE
-    else
-      brd_hsh[square_to_block] = CPU_PIECE
-    end
+def cpu_select_square(brd_hsh)
+  if detect_win(brd_hsh)
+    cpu_choice = detect_win(brd_hsh)
+  elsif assess_threat(brd_hsh)
+    cpu_choice = assess_threat(brd_hsh)
+  elsif empty_squares(brd_hsh).include?(5)
+    cpu_choice = 5
   else
-    cpu_select = empty_squares(brd_hsh).sample
-    brd_hsh[cpu_select] = CPU_PIECE
+    cpu_choice = empty_squares(brd_hsh).sample
   end
+  brd_hsh[cpu_choice] = CPU_PIECE
 end
 
 def board_full?(brd_hsh)
@@ -182,49 +158,115 @@ def display_winner(score_hsh)
   end
 end
 
-def detect_threat?(brd_hsh)
-  player_squares = brd_hsh.select {|_, value| value == USER_PIECE}.keys
-  threat = WINNING_COMBOS.select do |combo|
-    combo.difference(player_squares).size == 1
-  end
-  !!threat[0]
-end
-
 def assess_threat(brd_hsh)
   player_squares = brd_hsh.select {|_, value| value == USER_PIECE}.keys
   block_location = nil
   WINNING_COMBOS.each do |combo|
     if combo.difference(player_squares).size == 1
-      block_location = combo.difference(player_squares)
-      if (brd_hsh[block_location[0]] == CPU_PIECE)
-        next
-      else
+      block_location = combo.difference(player_squares).first
+      if empty_squares(brd_hsh).include?(block_location)
         break
+      else
+        block_location = nil
+        next
       end
     end
   end
-  block_location[0]
+  block_location
+end
+
+def detect_win(brd_hsh)
+  computer_squares = brd_hsh.select {|_, value| value == CPU_PIECE}.keys
+  square_to_win = nil
+  WINNING_COMBOS.select do |combo|
+    if combo.difference(computer_squares).size == 1
+      square_to_win = combo.difference(computer_squares).first
+      if empty_squares(brd_hsh).include?(square_to_win)
+        break
+      else
+        square_to_win = nil
+        next
+      end
+    end
+  end
+  square_to_win
+end
+
+def set_play_order
+  puts "#{tab_pad(2)}Who would you like to have the first move this round?"
+  puts "#{tab_pad(4)}'Player' or 'Computer'?"
+  new_line
+  puts "You may enter things like: 'player', 'P', 'Computer', 'c'..."
+  first_player = get_input(%w(player Player p P computer Computer c C))
+  case first_player
+  when 'player'
+    FIRST_MOVE[:player]
+  when 'p'
+    FIRST_MOVE[:player]
+  when 'computer'
+    FIRST_MOVE[:computer]
+  when 'c'
+    FIRST_MOVE[:computer]
+  end
+end
+
+def place_piece!(brd_hsh, current_player)
+  case current_player
+  when 'player'
+    usr_select_square(brd_hsh)
+  when 'computer'
+    cpu_select_square(brd_hsh)
+  end
+end
+
+def alternate_player(current_player)
+  case current_player
+  when 'player'
+    'computer'
+  when 'computer'
+    'player'
+  end
 end
 
 
 ## MAIN ##
-USER_PIECE = select_piece
-CPU_PIECE  = (USER_PIECE == X ? O : X)
+FIRST_MOVE = {
+  choose: 'choose',
+  player: 'player',
+  computer: 'computer'
+}
 
 loop do
   clear_screen
   score_hsh = initilize_score
 
+  puts "#{tab_pad(4)} Welcome to Tic Tac Toe:"
+  puts "#{tab_pad(4)} The first to 5 wins!"
+  new_line
+
+  USER_PIECE = select_piece
+  CPU_PIECE  = (USER_PIECE == X ? O : X)
+
+  puts "#{tab_pad(4)} Okay!"
+  puts "#{tab_pad(4)} You will be: #{USER_PIECE}"
+  puts "#{tab_pad(4)} The CPU will be: #{CPU_PIECE}"
+  new_line
+
+  puts "Press ENTER to continue:"
+  get_input("")
+
+  clear_screen
+  first_player = FIRST_MOVE[:choose]
+  first_player = set_play_order
+
   loop do
     board_hsh = initialize_board
-    # binding.pry
+    current_player = first_player
+
     loop do
       display_board(board_hsh, score_hsh)
-      usr_select_square(board_hsh)
-      display_board(board_hsh, score_hsh)
-      break if someone_won?(board_hsh) || board_full?(board_hsh)
-      cpu_select(board_hsh)
-      display_board(board_hsh, score_hsh)
+      place_piece!(board_hsh, current_player)
+      current_player = alternate_player(current_player)
       break if someone_won?(board_hsh) || board_full?(board_hsh)
     end
 
@@ -236,6 +278,10 @@ loop do
       puts "It's a tie!"
     end
 
+    new_line
+    puts "Press ENTER to continue:"
+    get_input("")
+
     case detect_winner(board_hsh)
     when 'Player'
       score_hsh[:player] += 1
@@ -244,8 +290,12 @@ loop do
     end
     break if score_hsh.values.include?(5)
   end
+
+  clear_screen
   display_winner(score_hsh)
+  
   puts "Would you like to play again?"
+  new_line
   puts "'Y': yes; 'N': no"
   answer = get_input(%w(y Y n N))
 
