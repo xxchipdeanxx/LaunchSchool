@@ -5,10 +5,12 @@ DEFAULT_MARK = " "
 X = "\e[1m\e[31mX\e[0m"
 O = "\e[1m\e[32mO\e[0m"
 
-WINNING_COMBOS = [[1,2,3], [4,5,6], [7,8,9]] +
-[[1,4,7], [2,5,8], [3,6,9]] +
-[[1,5,9], [3,5,7]]
+USER_PIECE = X
+CPU_PIECE = O
 
+WINNING_COMBOS = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] +
+                 [[1, 4, 7], [2, 5, 8], [3, 6, 9]] +
+                 [[1, 5, 9], [3, 5, 7]]
 
 def tab_pad(num)
   "\t" * num
@@ -24,11 +26,10 @@ def input_prompt
 end
 
 def initilize_score
-  {player: 0, cpu: 0}
+  { player: 0, cpu: 0 }
 end
 
 def get_input(acceptable_answers)
-  puts "Please enter your answer:"
   user_input = nil
   loop do
     user_input = input_prompt
@@ -51,24 +52,24 @@ def select_piece
     puts "Please select a valid piece"
   end
   usr_choice == 'x' ? X : O
-  # usr_choice.to_sym
 end
 
-def display_board(brd_hsh, score_hsh)
+def display_score(score)
+  puts "User(#{USER_PIECE}) Score: #{score[:player]}"
+  puts "CPU(#{CPU_PIECE}) Score: #{score[:cpu]}"
+  puts "      |      |      "
+end
+
+def display_board(brd, score)
   clear_screen
-  puts "User(#{USER_PIECE}) Score: #{score_hsh[:player]}"
-  puts "CPU(#{CPU_PIECE}) Score: #{score_hsh[:cpu]}"
-  puts"      |      |      "
-  puts"   #{brd_hsh[1]}  |   #{brd_hsh[2]}  |   #{brd_hsh[3]}   "
-  puts"      |      |      "
-  puts"--------------------"
-  puts"      |      |      "
-  puts"   #{brd_hsh[4]}  |   #{brd_hsh[5]}  |   #{brd_hsh[6]}   "
-  puts"      |      |      "
-  puts"--------------------"
-  puts"      |      |      "
-  puts"   #{brd_hsh[7]}  |   #{brd_hsh[8]}  |   #{brd_hsh[9]}   "
-  puts"      |      |      "
+  display_score(score)
+  puts "   #{brd[1]}  |   #{brd[2]}  |   #{brd[3]}   "
+  puts "--------------------"
+  puts "      |      |      "
+  puts "   #{brd[4]}  |   #{brd[5]}  |   #{brd[6]}   "
+  puts "--------------------"
+  puts "   #{brd[7]}  |   #{brd[8]}  |   #{brd[9]}   "
+  puts "      |      |      "
 end
 
 def initialize_board
@@ -82,16 +83,16 @@ end
 def joinor(array, separator = ';', conj = 'or')
   if array.size > 1
     array.insert(-2, conj)
-    trailing_element = array[-2,2]
-    array.slice!(-2,2)
+    trailing_element = array[-2, 2]
+    array.slice!(-2, 2)
     array.join(separator) + " " + trailing_element.join(" ")
   else
     array[0]
   end
 end
 
-def empty_squares(brd_hsh)  #generates an array of available choices
-  empty_squares = brd_hsh.keys.select {|num| brd_hsh[num] == DEFAULT_MARK}
+def empty_squares(brd_hsh)
+  brd_hsh.keys.select { |num| brd_hsh[num] == DEFAULT_MARK }
 end
 
 def usr_select_square(brd_hsh)
@@ -127,18 +128,10 @@ def board_full?(brd_hsh)
 end
 
 def detect_winner(brd_hsh)
-  winning_moves = [[1,2,3], [4,5,6], [7,8,9]] +
-                  [[1,4,7], [2,5,8], [3,6,9]] +
-                  [[1,5,9], [3,5,7]]
-
-  winning_moves.each do |line|
-    if brd_hsh[line[0]] == USER_PIECE &&
-       brd_hsh[line[1]] == USER_PIECE &&
-       brd_hsh[line[2]] == USER_PIECE
-       return 'Player'
-    elsif brd_hsh[line[0]] == CPU_PIECE &&
-      brd_hsh[line[1]] == CPU_PIECE &&
-      brd_hsh[line[2]] == CPU_PIECE
+  WINNING_COMBOS.each do |combo|
+    if combo.select { |square| brd_hsh[square] == USER_PIECE }.size == 3
+      return 'Player'
+    elsif combo.select { |square| brd_hsh[square] == CPU_PIECE }.size == 3
       return 'Computer'
     end
   end
@@ -159,7 +152,7 @@ def display_winner(score_hsh)
 end
 
 def assess_threat(brd_hsh)
-  player_squares = brd_hsh.select {|_, value| value == USER_PIECE}.keys
+  player_squares = brd_hsh.select { |_, value| value == USER_PIECE }.keys
   block_location = nil
   WINNING_COMBOS.each do |combo|
     if combo.difference(player_squares).size == 1
@@ -176,7 +169,7 @@ def assess_threat(brd_hsh)
 end
 
 def detect_win(brd_hsh)
-  computer_squares = brd_hsh.select {|_, value| value == CPU_PIECE}.keys
+  computer_squares = brd_hsh.select { |_, value| value == CPU_PIECE }.keys
   square_to_win = nil
   WINNING_COMBOS.select do |combo|
     if combo.difference(computer_squares).size == 1
@@ -228,7 +221,6 @@ def alternate_player(current_player)
   end
 end
 
-
 ## MAIN ##
 FIRST_MOVE = {
   choose: 'choose',
@@ -244,10 +236,6 @@ loop do
   puts "#{tab_pad(4)} The first to 5 wins!"
   new_line
 
-  USER_PIECE = select_piece
-  CPU_PIECE  = (USER_PIECE == X ? O : X)
-
-  puts "#{tab_pad(4)} Okay!"
   puts "#{tab_pad(4)} You will be: #{USER_PIECE}"
   puts "#{tab_pad(4)} The CPU will be: #{CPU_PIECE}"
   new_line
@@ -293,7 +281,7 @@ loop do
 
   clear_screen
   display_winner(score_hsh)
-  
+
   puts "Would you like to play again?"
   new_line
   puts "'Y': yes; 'N': no"
