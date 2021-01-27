@@ -1,0 +1,3 @@
+This is going to be a smaller scale test for our sentance grabbing program.
+The plan, if all goes well, will be to be able to keep the punctuation in 
+our final print out. Will it work? Who knows? But we have to give it a shot.
