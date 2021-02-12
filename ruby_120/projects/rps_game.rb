@@ -1,5 +1,4 @@
 require 'pry'
-
 def clear_screen
   system('clear') || system('cls')
 end
@@ -61,15 +60,13 @@ class Human < Player
     clear_screen
     selection = nil
     loop do
-      puts "Please select #{Moves::TABLE.keys}"
+      puts "Please select #{Move::CHOICES}"
       selection = gets.chomp.downcase
-      break if Moves::TABLE.include?(selection)
-      puts 'Sorry, that is an invalid input'
-      new_line
+      break if Move::CHOICES.include?(selection)
+      puts 'Sorry, that is an invalid input' + "\n"
     end
-    choice = Moves::TABLE[selection]
-    self.move = choice
-    @history << choice
+    self.move = Move.convert_to_class(selection)
+    @history << selection
   end
 end
 
@@ -78,110 +75,122 @@ class Computer < Player
 
   def initialize
     super()
-    @name = %w(Cerebro C_3PO The_Red_Queen).sample
   end
 
   def choose
-    choice = Moves::TABLE.values.sample
-    self.move = choice
-    @history << choice
+    selection = Move::CHOICES.sample
+    @move = Move.convert_to_class(selection)
+    @history << selection
   end
 end
 
-module Moves
-  class Move
-    attr_accessor :move
+class Cerebro < Computer
+  def initialize
+    super()
+    @name = 'Cerebro'
+  end
+end
 
-    def to_s
-      @move
-    end
+class TheRedQueen < Computer
+  def initialize
+    super()
+    @name = 'The Red Queen'
+  end
+end
 
-    def >(other_move)
-      self.beats?(other_move)
-    end
+class C3PO < Computer
+  def initialize
+    super()
+    @name = "C-3PO"
+  end
+end
 
-    def <(other_move)
-      self.loses?(other_move)
-    end
+class Move
+  CHOICES = %w(rock paper scissors lizard spock)
+  attr_accessor :move
+
+  def to_s
+    @move
   end
 
-  class Rock < Move
-    def initialize
-      @move = 'rock'
-    end
+  private
+  def self.convert_to_class(selection)
+    return Rock.new if selection == 'rock'
+    return Paper.new if selection == 'paper'
+    return Scissors.new if selection == 'scissors'
+    return Lizard.new if selection == 'lizard'
+    return Spock.new if selection == 'spock'
+  end
+end
 
-    def beats?(other_move)
-      %w(lizard scissors).include?(other_move.to_s)
-    end
-
-    def loses?(other_move)
-      %w(spock paper).include?(other_move.to_s)
-    end
+class Rock < Move
+  def initialize
+    @move = 'rock'
+  end
+  
+  def beats?(other_move)
+    %w(lizard scissors).include?(other_move.to_s)
   end
 
-  class Paper < Move
-    def initialize
-      @move = 'paper'
-    end
+  def loses?(other_move)
+    %w(spock paper).include?(other_move.to_s)
+  end
+end
 
-    def beats?(other_move)
-      %w(spock rock).include?(other_move.to_s)
-    end
-
-    def loses?(other_move)
-      %w(lizard scissors).include?(other_move.to_s)
-    end
+class Paper < Move
+  def initialize
+    @move = 'paper'
   end
 
-  class Scissors < Move
-    def initialize
-      @move = 'scissors'
-    end
-
-    def beats?(other_move)
-      %w(lizard paper).include?(other_move.to_s)
-    end
-
-    def loses?(other_move)
-      %w(spock rock).include?(other_move.to_s)
-    end
+  def beats?(other_move)
+    %w(spock rock).include?(other_move.to_s)
   end
 
-  class Lizard < Move
-    def initialize
-      @move = 'lizard'
-    end
+  def loses?(other_move)
+    %w(lizard scissors).include?(other_move.to_s)
+  end
+end
 
-    def beats?(other_move)
-      %w(spock paper).include?(other_move.to_s)
-    end
-
-    def loses?(other_move)
-      %w(scissors rock).include?(other_move.to_s)
-    end
+class Scissors < Move
+  def initialize
+    @move = 'scissors'
   end
 
-  class Spock < Move
-    def initialize
-      @move = 'spock'
-    end
-
-    def beats?(other_move)
-      %w(rock scissors).include?(other_move.to_s)
-    end
-
-    def loses?(other_move)
-      %w(lizard paper).include?(other_move.to_s)
-    end
+  def beats?(other_move)
+    %w(lizard paper).include?(other_move.to_s)
   end
 
-  TABLE = {
-    'rock' => Rock.new,
-    'paper' => Paper.new,
-    'scissors' => Scissors.new,
-    'lizard' => Lizard.new,
-    'spock' => Spock.new
-  }
+  def loses?(other_move)
+    %w(spock rock).include?(other_move.to_s)
+  end
+end
+
+class Lizard < Move
+  def initialize
+    @move = 'lizard'
+  end
+
+  def beats?(other_move)
+    %w(spock paper).include?(other_move.to_s)
+  end
+
+  def loses?(other_move)
+    %w(scissors rock).include?(other_move.to_s)
+  end
+end
+
+class Spock < Move
+  def initialize
+    @move = 'spock'
+  end
+
+  def beats?(other_move)
+    %w(rock scissors).include?(other_move.to_s)
+  end
+
+  def loses?(other_move)
+    %w(lizard paper).include?(other_move.to_s)
+  end
 end
 
 class Score
@@ -219,7 +228,7 @@ class RPSGame
 
   def initialize
     @player = Human.new
-    @computer = Computer.new
+    @computer = [Cerebro, TheRedQueen, C3PO].sample.new
     @players = [@player, @computer]
   end
 
@@ -237,7 +246,7 @@ class RPSGame
   def display_moves
     clear_screen
     puts "Your move: #{player.move}"
-    puts "Computer move: #{computer.move}"
+    puts "#{computer.name}'s move: #{computer.move}"
   end
 
   def print_winner(winning_player)
@@ -246,9 +255,9 @@ class RPSGame
   end
 
   def display_winner
-    if player.move > computer.move
+    if player.move.beats?(computer.move)
       print_winner(player)
-    elsif player.move < computer.move
+    elsif player.move.loses?(computer.move)
       print_winner(computer)
     else
       puts "It's a tie"
