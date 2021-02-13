@@ -1,4 +1,6 @@
-module TerminalCotrol
+require 'pry'
+
+module TerminalControl
   def clear_screen
     system('clear') || system('cls')
   end
@@ -19,11 +21,11 @@ module TerminalCotrol
 end
 
 class Player
-  include TerminalCotrol
+  include TerminalControl
   attr_accessor :move, :score, :history, :name
 
   def initialize
-    @move = nil
+    @name = nil
     @score = nil
     @name = nil
     @history = []
@@ -43,7 +45,7 @@ class Player
 
   def assign_move(selection)
     self.move = Move.convert_to_class(selection)
-    @history << selection
+    @history << move
   end
 end
 
@@ -120,11 +122,11 @@ class Cerebro < Computer
   end
 
   def move_that_beats(previous_move)
-    Move::WINNING_MOVES[previous_move].sample
+     previous_move.beats.sample.to_s.downcase
   end
 
   def move_that_caused_loss(previous_move)
-    Move::LOSING_MOVES[previous_move].sample
+    previous_move.loses.sample.to_s.downcase
   end
 end
 
@@ -146,8 +148,9 @@ class TheRedQueen < Computer
   private
 
   def select_opposite(declaration)
-    anticipated_opponent_move = Move::WINNING_MOVES[declaration].sample
-    Move::WINNING_MOVES[anticipated_opponent_move].sample
+    false_move = Move.convert_to_class(declaration)
+    anticipated_opponent_move = false_move.loses.sample.new
+    anticipated_opponent_move.beats.sample.to_s.downcase
   end
 end
 
@@ -166,24 +169,16 @@ end
 
 class Move
   CHOICES = [%w(rock paper scissors lizard spock), %w(ro pa sc li sp)]
-  WINNING_MOVES = {
-    'rock' => ['scissors', 'lizard'],
-    'paper' => ['rock', 'spock'],
-    'scissors' => ['lizard', 'paper'],
-    'lizard' => ['spock', 'paper'],
-    'spock' => ['scissors', 'rock']
-  }
-  LOSING_MOVES = {
-    'rock' => ['spock', 'paper'],
-    'paper' => ['lizard', 'scissors'],
-    'scissors' => ['rock', 'spock'],
-    'lizard' => ['scissors', 'rock'],
-    'spock' => ['lizard', 'paper']
-  }
-  attr_accessor :move
+
+  attr_accessor :name
+  attr_reader :beats, :loses
 
   def to_s
-    @move
+    @name
+  end
+
+  def >(other_move)
+    @beats.any? {|loser| other_move.class == loser }
   end
 
   def self.convert_to_class(selection)
@@ -204,71 +199,41 @@ end
 
 class Rock < Move
   def initialize
-    @move = 'rock'
-  end
-
-  def beats?(other_move)
-    %w(lizard scissors).include?(other_move.to_s)
-  end
-
-  def loses?(other_move)
-    %w(spock paper).include?(other_move.to_s)
+    @name = 'rock'
+    @beats = [Lizard, Scissors]
+    @loses = [Spock, Paper]
   end
 end
 
 class Paper < Move
   def initialize
-    @move = 'paper'
-  end
-
-  def beats?(other_move)
-    %w(spock rock).include?(other_move.to_s)
-  end
-
-  def loses?(other_move)
-    %w(lizard scissors).include?(other_move.to_s)
+    @name = 'paper'
+    @beats = [Spock, Rock]
+    @loses = [Lizard, Scissors]
   end
 end
 
 class Scissors < Move
   def initialize
-    @move = 'scissors'
-  end
-
-  def beats?(other_move)
-    %w(lizard paper).include?(other_move.to_s)
-  end
-
-  def loses?(other_move)
-    %w(spock rock).include?(other_move.to_s)
+    @name = 'scissors'
+    @beats = [Lizard, Paper]
+    @loses = [Rock, Spock]
   end
 end
 
 class Lizard < Move
   def initialize
-    @move = 'lizard'
-  end
-
-  def beats?(other_move)
-    %w(spock paper).include?(other_move.to_s)
-  end
-
-  def loses?(other_move)
-    %w(scissors rock).include?(other_move.to_s)
+    @name = 'lizard'
+    @beats = [Spock, Paper]
+    @loses = [Scissors, Rock]
   end
 end
 
 class Spock < Move
   def initialize
-    @move = 'spock'
-  end
-
-  def beats?(other_move)
-    %w(rock scissors).include?(other_move.to_s)
-  end
-
-  def loses?(other_move)
-    %w(lizard paper).include?(other_move.to_s)
+    @name = 'spock'
+    @beats = [Rock, Scissors]
+    @loses = [Paper, Lizard]
   end
 end
 
@@ -303,12 +268,12 @@ class Score
 end
 
 class RPSGame
-  include TerminalCotrol
+  include TerminalControl
   attr_reader :player, :computer
 
   def initialize
     @player = Human.new
-    @computer = [TheRedQueen, C3PO, Cerebro].sample.new
+    @computer = [TheRedQueen, Cerebro, C3PO].sample.new
     @players = [@computer, @player]
   end
 
@@ -335,10 +300,10 @@ class RPSGame
   end
 
   def display_winner
-    if player.move.beats?(computer.move)
+    if player.move > computer.move
       print_winner(player)
       computer.prev_round_won = false
-    elsif player.move.loses?(computer.move)
+    elsif computer.move > player.move
       print_winner(computer)
       computer.prev_round_won = true
     else
