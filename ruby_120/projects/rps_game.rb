@@ -1,33 +1,36 @@
-require 'pry'
-def clear_screen
-  system('clear') || system('cls')
-end
+module TerminalCotrol
+  def clear_screen
+    system('clear') || system('cls')
+  end
 
-def new_line
-  puts
-end
+  def new_line
+    puts
+  end
 
-def press_enter_to_cont
-  input = nil
-  loop do
-    puts "PRESS ENTER TO CONTINUE..."
-    input = gets.chomp
-    break if input.empty?
-    puts "Hm...something went wrong"
+  def press_enter_to_cont
+    input = nil
+    loop do
+      puts "PRESS ENTER TO CONTINUE..."
+      input = gets.chomp
+      break if input.empty?
+      puts "Hm...something went wrong"
+    end
   end
 end
 
 class Player
-  attr_accessor :move, :score, :history
+  include TerminalCotrol
+  attr_accessor :move, :score, :history, :name
 
   def initialize
     @move = nil
     @score = nil
+    @name = nil
     @history = []
   end
 
   def establish_score(limit)
-    @score = Score.new(limit)
+    self.score = Score.new(limit)
   end
 
   def display_history
@@ -35,15 +38,35 @@ class Player
       puts "Choice ##{index + 1}: #{move}"
     end
   end
+
+  private
+
+  def assign_move(selection)
+    self.move = Move.convert_to_class(selection)
+    @history << selection
+  end
 end
 
 class Human < Player
-  attr_reader :name
-
   def initialize
     super()
     @name = set_name
   end
+
+  def choose
+    clear_screen
+    selection = nil
+    loop do
+      puts "Please select #{Move.display_choices}"
+      selection = gets.chomp.downcase
+      break if Move::CHOICES.flatten.include?(selection)
+      puts 'Sorry, that is an invalid input' + "\n"
+    end
+    selection = format(selection)
+    assign_move(selection)
+  end
+
+  private
 
   def set_name
     name = ""
@@ -56,31 +79,17 @@ class Human < Player
     name
   end
 
-  def choose
-    clear_screen
-    selection = nil
-    loop do
-      puts "Please select #{Move::CHOICES}"
-      selection = gets.chomp.downcase
-      break if Move::CHOICES.include?(selection)
-      puts 'Sorry, that is an invalid input' + "\n"
-    end
-    self.move = Move.convert_to_class(selection)
-    @history << selection
+  def format(selection)
+    Move::CHOICES[0].select { |word| word.include?(selection) }.join
   end
 end
 
 class Computer < Player
-  attr_reader :name
+  attr_accessor :prev_round_won
 
   def initialize
     super()
-  end
-
-  def choose
-    selection = Move::CHOICES.sample
-    @move = Move.convert_to_class(selection)
-    @history << selection
+    @prev_round_won = nil
   end
 end
 
@@ -89,6 +98,34 @@ class Cerebro < Computer
     super()
     @name = 'Cerebro'
   end
+
+  def choose
+    # if first chioce --> select at random
+    # if CPU won --> select a move that would beat previous, winning move
+    # if CPU lost --> select one of the moves that beat it
+    selection = if prev_round_won.nil?
+                  Move::CHOICES[0].sample
+                elsif prev_round_won?
+                  move_that_beats(history.last)
+                else
+                  move_that_caused_loss(history.last)
+                end
+    assign_move(selection)
+  end
+
+  private
+
+  def prev_round_won?
+    prev_round_won == true
+  end
+
+  def move_that_beats(previous_move)
+    Move::WINNING_MOVES[previous_move].sample
+  end
+
+  def move_that_caused_loss(previous_move)
+    Move::LOSING_MOVES[previous_move].sample
+  end
 end
 
 class TheRedQueen < Computer
@@ -96,24 +133,59 @@ class TheRedQueen < Computer
     super()
     @name = 'The Red Queen'
   end
+
+  def choose
+    # win via deception
+    declaration = Move::CHOICES[0].sample
+    puts "#{name} says she is selecting #{declaration}"
+    true_selection = select_opposite(declaration)
+    assign_move(true_selection)
+    press_enter_to_cont
+  end
+
+  private
+
+  def select_opposite(declaration)
+    anticipated_opponent_move = Move::WINNING_MOVES[declaration].sample
+    Move::WINNING_MOVES[anticipated_opponent_move].sample
+  end
 end
 
 class C3PO < Computer
+  # random seleciton
   def initialize
     super()
     @name = "C-3PO"
   end
+
+  def choose
+    selection = Move::CHOICES[0].sample
+    assign_move(selection)
+  end
 end
 
 class Move
-  CHOICES = %w(rock paper scissors lizard spock)
+  CHOICES = [%w(rock paper scissors lizard spock), %w(ro pa sc li sp)]
+  WINNING_MOVES = {
+    'rock' => ['scissors', 'lizard'],
+    'paper' => ['rock', 'spock'],
+    'scissors' => ['lizard', 'paper'],
+    'lizard' => ['spock', 'paper'],
+    'spock' => ['scissors', 'rock']
+  }
+  LOSING_MOVES = {
+    'rock' => ['spock', 'paper'],
+    'paper' => ['lizard', 'scissors'],
+    'scissors' => ['rock', 'spock'],
+    'lizard' => ['scissors', 'rock'],
+    'spock' => ['lizard', 'paper']
+  }
   attr_accessor :move
 
   def to_s
     @move
   end
 
-  private
   def self.convert_to_class(selection)
     return Rock.new if selection == 'rock'
     return Paper.new if selection == 'paper'
@@ -121,13 +193,20 @@ class Move
     return Lizard.new if selection == 'lizard'
     return Spock.new if selection == 'spock'
   end
+
+  def self.display_choices
+    CHOICES[0].map do |move|
+      leading_chars = /^[[:lower:]]{2}/.match(move).to_s
+      move.gsub(leading_chars, "(#{leading_chars})")
+    end
+  end
 end
 
 class Rock < Move
   def initialize
     @move = 'rock'
   end
-  
+
   def beats?(other_move)
     %w(lizard scissors).include?(other_move.to_s)
   end
@@ -224,12 +303,13 @@ class Score
 end
 
 class RPSGame
+  include TerminalCotrol
   attr_reader :player, :computer
 
   def initialize
     @player = Human.new
-    @computer = [Cerebro, TheRedQueen, C3PO].sample.new
-    @players = [@player, @computer]
+    @computer = [TheRedQueen, C3PO, Cerebro].sample.new
+    @players = [@computer, @player]
   end
 
   def display_welcome
@@ -257,8 +337,10 @@ class RPSGame
   def display_winner
     if player.move.beats?(computer.move)
       print_winner(player)
+      computer.prev_round_won = false
     elsif player.move.loses?(computer.move)
       print_winner(computer)
+      computer.prev_round_won = true
     else
       puts "It's a tie"
     end
@@ -278,16 +360,16 @@ class RPSGame
   end
 
   def score_limit_reached?
-    player.score == Score.limit || computer.score == Score.limit
+    @players.any? { |player| player.score == Score.limit }
   end
 
   def select_round_numbers
-    puts 'How many rounds would you like to play?'
+    puts 'How many rounds would you like to play? Max Rounds = 10'
     limit = nil
     loop do
       limit = gets.chomp.to_i
-      break if limit > 0
-      puts 'Please enter a valid number greater than 0'
+      break if limit.between?(1, 10)
+      puts 'Please enter a valid number.'
     end
     player.establish_score(limit)
     computer.establish_score(limit)
@@ -300,10 +382,10 @@ class RPSGame
       puts 'Would you like to play again?'
       puts 'Enter Y for Yes and N for No'
       choice = gets.chomp.downcase
-      break if %w(y n).include?(choice)
+      break if %w(y yes n no).include?(choice)
       puts 'Sorry, you have entered the wrong input.'
     end
-    choice == 'y'
+    choice == 'y' || choice == 'yes'
   end
 
   def play
