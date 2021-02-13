@@ -1,0 +1,49 @@
+## TASK ##
+Create a simple version of black jack
+
+## RULES ##
+1. The player always goes first
+2. The dealer must hit until total is at least 17
+3. Only one of the dealer cards is shown to the player
+3. Aces can be 11 or 1
+  - 11 if it will not bust either player or dealer
+  - 1 if it is determined that an 11 would bust either the player or the dealer
+4. We have a standard 1 deck game (52 cards)
+  - 4 suits: [spade,heart,diamond,club]
+  - 13 values: [2,3,4,5,6,7,8,9,10,jack,queen,king,ace]
+5. Ties are possible
+6. Totals are calculated after the dealer stays
+7. If player busts --> dealer automatically wins
+8. If dealer busts --> player automatically wins
+
+## BASIC GAME SEQUENCE ##
+1. Both player and dealer are deal two cards
+2. Dealer reveals only one card
+3. Players total is updated
+4. Player can either hit or stay
+5. If hit --> player is dealt a card and total is updated # def draw_card(player)
+6. If total = 21 --> player auto wins
+7. If player_total > 21 --> player busts and dealer wins
+8. If stay --> player turn ends
+9. Dealer can either hit or stay
+10. If hit --> dealer is dealt a card and total is updated
+11. If dealer_total > 21 --> dealer busts and player wins
+12. If stay --> dealer turn ends
+13. Both players totals are compared to one another
+14. If player_total > dealer_total --> player wins
+15. If dealer_total > player_total --> dealer wins
+16. If player_total == dealer_total --> its a tie
+
+## CALCULATE TOTALS ## 
+1. Access player's total player[:total]
+2. Access player's hand --> hash containing arrays
+3. For EACH Suit/Key in the outter hash --> references an array of hash
+  - Iterate through the array containing all cards of the THAT suit
+  - Access the value stored at the card --> card.each |face, value|
+    - if card.has_key?(:ace) || 
+
+## END OF GAME ##
+If player[:total] > 21 --> Dealer won
+If dealer[:total] > 21 --> Player won
+
+
