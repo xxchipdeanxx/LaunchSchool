@@ -1,5 +1,3 @@
-require 'pry'
-
 module TerminalControl
   def clear_screen
     system('clear') || system('cls')
@@ -122,7 +120,7 @@ class Cerebro < Computer
   end
 
   def move_that_beats(previous_move)
-     previous_move.beats.sample.to_s.downcase
+    previous_move.beats.sample.to_s.downcase
   end
 
   def move_that_caused_loss(previous_move)
@@ -150,7 +148,7 @@ class TheRedQueen < Computer
   def select_opposite(declaration)
     false_move = Move.convert_to_class(declaration)
     anticipated_opponent_move = false_move.loses.sample.new
-    anticipated_opponent_move.beats.sample.to_s.downcase
+    anticipated_opponent_move.loses.sample.to_s.downcase
   end
 end
 
@@ -168,6 +166,7 @@ class C3PO < Computer
 end
 
 class Move
+  # allows for both full and abbreviated user input
   CHOICES = [%w(rock paper scissors lizard spock), %w(ro pa sc li sp)]
 
   attr_accessor :name
@@ -178,7 +177,7 @@ class Move
   end
 
   def >(other_move)
-    @beats.any? {|loser| other_move.class == loser }
+    @beats.any? { |loser| other_move.class == loser }
   end
 
   def self.convert_to_class(selection)
@@ -277,6 +276,34 @@ class RPSGame
     @players = [@computer, @player]
   end
 
+  def play_again?
+    choice = nil
+    loop do
+      new_line
+      puts 'Would you like to play again?'
+      puts "Enter 'Y' for Yes and 'N' for No"
+      choice = gets.chomp.downcase
+      break if %w(y yes n no).include?(choice)
+      puts 'Sorry, you have entered the wrong input.'
+    end
+    choice == 'y' || choice == 'yes'
+  end
+
+  def play
+    loop do
+      display_welcome
+      until score_limit_reached?
+        @players.each(&:choose)
+        display_running_tally
+      end
+      display_final_winner
+      break unless play_again?
+    end
+    display_goodbye
+  end
+
+  private
+
   def display_welcome
     clear_screen
     puts "Welcome to Rock, Paper, Scissors!"
@@ -338,32 +365,6 @@ class RPSGame
     end
     player.establish_score(limit)
     computer.establish_score(limit)
-  end
-
-  def play_again?
-    choice = nil
-    loop do
-      new_line
-      puts 'Would you like to play again?'
-      puts 'Enter Y for Yes and N for No'
-      choice = gets.chomp.downcase
-      break if %w(y yes n no).include?(choice)
-      puts 'Sorry, you have entered the wrong input.'
-    end
-    choice == 'y' || choice == 'yes'
-  end
-
-  def play
-    loop do
-      display_welcome
-      until score_limit_reached?
-        @players.each(&:choose)
-        display_running_tally
-      end
-      display_final_winner
-      break unless play_again?
-    end
-    display_goodbye
   end
 end
 

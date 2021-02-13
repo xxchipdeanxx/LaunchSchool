@@ -1,3 +1,6 @@
+require 'pry'
+require 'pry-byebug'
+
 TARGET_NUM = 21
 DEALER_LIMIT = 17
 
@@ -15,7 +18,7 @@ end
 
 def input_prompt
   print "\e[5m=>\e[0m"
-  gets.chomp
+  gets.chomp.downcase
 end
 
 def get_input(acceptable_answers)
@@ -34,19 +37,33 @@ def auto_stay
   new_line
 end
 
+def auto_win?(total_hsh)
+  total_hsh[:player] > TARGET_NUM || total_hsh[:dealer] > TARGET_NUM
+end
+
 def hit_or_stay?
   puts "#{tab_pad(3)}Would you like to HIT or STAY"
   puts "#{tab_pad(2)}HIT: 'hit' or 'h'; STAY: 's' or 'stay'"
   answer = get_input(%w(hit h stay s))
-  if answer == 'hit' || answer == 'h'
-    'hit'
-  else
-    'stay'
+  answer.start_with?('h') ? 'hit' : 'stay'
+end
+
+def display_move(move, player_str)
+  case move
+  when 'hit'
+    puts "#{tab_pad(3)}#{player_str} has opted to HIT"
+  when 'stay'
+    puts "#{tab_pad(3)}#{player_str} has opted to STAY"
   end
 end
 
+def press_end_to_cont
+  puts "Press ENTER to continue"
+  get_input("")
+end
+
 def bust(player_str)
-  puts "#{tab_pad(3)}\e[1m\e[31m#{player_str} HAS GONE BUST!\e[0m"
+  "#{tab_pad(3)}\e[1m\e[31m#{player_str} HAS GONE BUST!\e[0m"
 end
 
 def generate_cards
@@ -67,21 +84,31 @@ def generate_cards
   }
 end
 
-def adjust_ace(deck, suit, player_hand)
-  if player_hand[:total] + 11 > TARGET_NUM
+def generate_deck
+  {
+      hearts: generate_cards,
+      diamonds: generate_cards,
+      spades: generate_cards,
+      clubs: generate_cards
+    }
+end
+
+def adjust_ace(deck, suit, total_hsh, player_sym)
+  if total_hsh[player_sym] + 11 > TARGET_NUM
     deck[suit][:Ace] = 1
   else
     deck[suit][:Ace] = 11
   end
 end
 
-def deal_cards(deck, num, *player)
-  player.each do |player_hand|
+def deal_cards(deck, num, total_hsh, player_hand, player_sym)
     num.times do
       random_suit = deck.keys.sample
       random_card = deck[random_suit].keys.sample
 
-      adjust_ace(deck, random_suit, player_hand) if random_card == :Ace
+      if random_card == :Ace
+        adjust_ace(deck, random_suit, total_hsh, player_sym)
+      end
 
       if player_hand.key?(random_suit)
         player_hand[random_suit] << deck[random_suit].slice(random_card)
@@ -90,19 +117,20 @@ def deal_cards(deck, num, *player)
       end
       deck[random_suit].delete(random_card)
     end
+end
+
+def calc_total(total_hsh, player_hand, player_sym)
+  total_hsh[player_sym] = 0
+  player_hand.each do |suit|
+    player_hand[suit[0]].each do |card|
+      total_hsh[player_sym] += card.values.sum
+    end
   end
 end
 
-def calc_total(*player)
-  player.each do |player_profile|
-    player_profile[:total] = 0 # temporarily resets total for incrementation
-    player_hand = player_profile.select { |suit| suit != :total }
-    player_hand.each do |suit|
-      player_hand[suit[0]].each do |card|
-        player_profile[:total] += card.values.sum
-      end
-    end
-  end
+def display_totals(total_hsh)
+  puts "\e[1m\e[32m Your Total\e[0m: #{total_hsh[:player]}"
+  puts "\e[1m\e[31m Dealer Total\e[0m: #{total_hsh[:dealer]}"
 end
 
 def display_player_hand(player)
@@ -132,13 +160,30 @@ def display_dealer_hand(dealer)
   "#{card} of #{suit} and #{hand_size - 1} more"
 end
 
-def display_game_status(dealer, player_wins, dealer_wins, player = nil)
-  puts "\e[1m\e[32mYour Wins\e[0m: #{player_wins}"
-  puts "\e[1m\e[31mDEALER Wins\e[0m: #{dealer_wins}"
+def display_welcome
+    puts "#{tab_pad(3)} Welcome to Twenty-One:"
+  puts "#{tab_pad(2)} The first to 5 winning hands is the victor"
+  new_line
+
+  puts "Press ENTER to continue"
+  get_input("")
+end
+
+def display_winner(player_str, auto = false)
+  if auto == true
+    puts "#{tab_pad(3)} \e[1m The #{player_str} has automatically won\e[0m"
+  else
+    puts "#{tab_pad(3)} \e[1m The #{player_str} has won this round\e[0m"
+  end
+end
+
+def display_game_status(dealer, wins, total, player = nil)
+  puts "\e[1m\e[32mYour Wins\e[0m: #{wins[:player]}"
+  puts "\e[1m\e[31mDEALER Wins\e[0m: #{wins[:dealer]}"
   new_line
 
   if !player.nil?
-    puts "\e[1m\e[32mYour Total\e[0m: #{player[:total]}"
+    puts "\e[1m\e[32mYour Total\e[0m: #{total[:player]}"
     puts "\e[1m\e[32mYour Hand:\e[0m:"
     display_player_hand(player)
     new_line
@@ -147,154 +192,153 @@ def display_game_status(dealer, player_wins, dealer_wins, player = nil)
   new_line
 end
 
-def determine_winner(player, dealer)
-  if player[:total] == dealer[:total]
+def determine_winner(hsh)
+  if hsh[:player] == hsh[:dealer]
     'tie'
-  elsif player[:total] > dealer[:total]
+  elsif hsh[:player] > hsh[:dealer]
     'player'
   else
     'dealer'
   end
 end
 
+def display_win_count(win_hsh)
+  puts "\e[1m\e[32mYour Wins\e[0m: #{win_hsh[:player]}"
+  puts "\e[1m\e[31mDEALER Wins\e[0m: #{win_hsh[:dealer]}"
+end
+
+def player_turn(player_hand, player_total, player_wins)
+end
+
 ## MAIN GAME LOOP ##
 clear_screen
-puts "#{tab_pad(3)} Welcome to Twenty-One:"
-puts "#{tab_pad(2)} The first to 5 winning hands is the victor"
-new_line
-
-puts "Press ENTER to continue"
-get_input("")
+display_welcome
 
 loop do
-  player_wins = 0
-  dealer_wins = 0
+  wins = {
+      player: 0,
+      dealer: 0
+    }
   loop do
-    deck = {
-      hearts: generate_cards,
-      diamonds: generate_cards,
-      spades: generate_cards,
-      clubs: generate_cards
+    deck = generate_deck
+
+    total = {
+      player: 0,
+      dealer: 0
     }
 
-    player = {
-      total: 0
-    }
+    player_hand = {}
+    dealer_hand = {}
 
-    dealer = {
-      total: 0
-    }
+    # binding.pry
 
-    deal_cards(deck, 2, player, dealer)
+    deal_cards(deck, 2, total, player_hand, :player)
+    deal_cards(deck, 2, total, dealer_hand, :dealer)
 
     ## PLAYER TURN ##
     loop do
       clear_screen
-      calc_total(player)
-      display_game_status(dealer, player_wins, dealer_wins, player)
+      calc_total(total, player_hand, :player)
+      display_game_status(dealer_hand, wins, total, player_hand)
       stay = nil
       bust = nil
 
-      if player[:total] > TARGET_NUM
-        bust('Player')
+      if total[:player] > TARGET_NUM
+        puts bust('Player')
         bust = true
-      elsif player[:total] == TARGET_NUM
+      elsif total[:player] == TARGET_NUM
         auto_stay
-        puts "Press ENTER to continue"
-        get_input("")
+        press_end_to_cont
         break
       else
         case hit_or_stay?
         when 'hit'
-          puts "You have opted to HIT"
-          deal_cards(deck, 1, player)
+          display_move('hit', 'Player')
+          deal_cards(deck, 1, total, player_hand, :player)
+
         when 'stay'
-          puts "You have opted to STAY"
+          display_move('stay','Player')
           stay = true
         end
       end
 
-      puts "Press ENTER to continue"
-      get_input("")
+      press_end_to_cont
       break if bust || stay
     end
 
     ## Computer Turn ##
     loop do
       clear_screen
-      calc_total(dealer)
+      calc_total(total, dealer_hand, :dealer)
 
-      break if player[:total] > TARGET_NUM
+      break if total[:player] > TARGET_NUM
 
-      until dealer[:total] >= DEALER_LIMIT
+      until total[:dealer] >= DEALER_LIMIT
         clear_screen
-        puts "#{tab_pad(3)}The dealer has opted to HIT"
+        display_move('hit', 'Dealer')
 
-        deal_cards(deck, 1, dealer)
-        display_game_status(dealer, player_wins, dealer_wins, nil)
+        deal_cards(deck, 1, total, dealer_hand, :dealer)
+        display_game_status(dealer_hand, wins, nil)
 
-        calc_total(dealer)
+        calc_total(total, dealer_hand, :dealer)
 
-        puts "Press ENTER to continue"
-        get_input("")
+        press_end_to_cont
       end
 
       clear_screen
 
-      if dealer[:total] > TARGET_NUM
+      if total[:dealer] > TARGET_NUM
         bust('Dealer')
       else
-        display_game_status(dealer, player_wins, dealer_wins, nil)
-        puts "#{tab_pad(3)}The dealer has opted to STAY"
+        display_game_status(dealer_hand, wins, nil)
+        display_move('stay', 'Dealer')
       end
 
-      puts "Press ENTER to continue"
-      get_input("")
+      press_end_to_cont
       break
     end
 
     ## END OF ROUND ##
     loop do
       clear_screen
-      if player[:total] > TARGET_NUM
-        puts "#{tab_pad(3)} \e[1m The dealer has automatically won\e[0m"
-        dealer_wins += 1
-      elsif dealer[:total] > TARGET_NUM
-        puts "#{tab_pad(3)} \e[1m\e[32m You have automatically won!\e[0m"
-        player_wins += 1
+      if auto_win?(total)
+        if total[:dealer] < TARGET_NUM
+          display_winner('Dealer', true)
+          wins[:dealer] += 1
+        else
+          display_winner('Player', true)
+          wins[:player] += 1
+        end
       else
-        puts "\e[1m\e[32m Your Total\e[0m: #{player[:total]}"
-        puts "\e[1m\e[31m Dealer Total\e[0m: #{dealer[:total]}"
+        display_totals(total)
 
-        case determine_winner(player, dealer)
+        case determine_winner(total)
         when 'tie'
           puts "#{tab_pad(3)} \e[1m\e[34m It's a tie\e[0m"
         when 'player'
-          puts "#{tab_pad(3)} \e[1m\e[32m You have won!\e[0m"
-          player_wins += 1
+          display_winner('Player')
+          wins[:player] += 1
         when 'dealer'
-          puts "#{tab_pad(3)} \e[1m Looks like the dealer has won\e[0m"
-          dealer_wins += 1
+          display_winner('Dealer')
+          wins[:dealer] += 1
         end
       end
-      puts "Press ENTER to continue"
-      get_input("")
+      press_end_to_cont
       break
     end
-    break if dealer_wins == 5 || player_wins == 5
+    break if wins[:dealer] == 5 || wins[:player] == 5
   end
 
   ## END OF GAME ##
   clear_screen
-  puts "\e[1m\e[32mYour Wins\e[0m: #{player_wins}"
-  puts "\e[1m\e[31mDEALER Wins\e[0m: #{dealer_wins}"
+  display_win_count(wins)
 
-  if player_wins == 5
-    puts "#{tab_pad(3)} \e[1m\e[32m Congradulations!"
-    puts "#{tab_pad(3)} You have won the game!\e[0m"
-  else
-    puts "#{tab_pad(3)} \e[1m\e[31mBetter luck next time...\e[0m"
-  end
+    if wins[:player] == 5
+      puts "#{tab_pad(3)} \e[1m\e[32m Congradulations!"
+      puts "#{tab_pad(3)} You have won the game!\e[0m"
+    else
+      puts "#{tab_pad(3)} \e[1m\e[31mBetter luck next time...\e[0m"
+    end
 
   puts "#{tab_pad(3)} Would you like to play again?"
   puts "#{tab_pad(3)} YES: 'yes' 'y' ; NO: 'no' 'n'"
