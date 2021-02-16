@@ -42,7 +42,7 @@ class Player
   private
 
   def assign_move(selection)
-    self.move = Move.convert_to_class(selection)
+    self.move = Moves.const_get(selection.capitalize).new
     @history << move
   end
 end
@@ -180,14 +180,6 @@ class Move
     @beats.any? { |loser| other_move.class == loser }
   end
 
-  def self.convert_to_class(selection)
-    return Rock.new if selection == 'rock'
-    return Paper.new if selection == 'paper'
-    return Scissors.new if selection == 'scissors'
-    return Lizard.new if selection == 'lizard'
-    return Spock.new if selection == 'spock'
-  end
-
   def self.display_choices
     CHOICES[0].map do |move|
       leading_chars = /^[[:lower:]]{2}/.match(move).to_s
@@ -196,43 +188,45 @@ class Move
   end
 end
 
-class Rock < Move
-  def initialize
-    @name = 'rock'
-    @beats = [Lizard, Scissors]
-    @loses = [Spock, Paper]
+module Moves
+  class Rock < Move
+    def initialize
+      @name = 'rock'
+      @beats = [Lizard, Scissors]
+      @loses = [Spock, Paper]
+    end
   end
-end
 
-class Paper < Move
-  def initialize
-    @name = 'paper'
-    @beats = [Spock, Rock]
-    @loses = [Lizard, Scissors]
+  class Paper < Move
+    def initialize
+      @name = 'paper'
+      @beats = [Spock, Rock]
+      @loses = [Lizard, Scissors]
+    end
   end
-end
 
-class Scissors < Move
-  def initialize
-    @name = 'scissors'
-    @beats = [Lizard, Paper]
-    @loses = [Rock, Spock]
+  class Scissors < Move
+    def initialize
+      @name = 'scissors'
+      @beats = [Lizard, Paper]
+      @loses = [Rock, Spock]
+    end
   end
-end
 
-class Lizard < Move
-  def initialize
-    @name = 'lizard'
-    @beats = [Spock, Paper]
-    @loses = [Scissors, Rock]
+  class Lizard < Move
+    def initialize
+      @name = 'lizard'
+      @beats = [Spock, Paper]
+      @loses = [Scissors, Rock]
+    end
   end
-end
 
-class Spock < Move
-  def initialize
-    @name = 'spock'
-    @beats = [Rock, Scissors]
-    @loses = [Paper, Lizard]
+  class Spock < Move
+    def initialize
+      @name = 'spock'
+      @beats = [Rock, Scissors]
+      @loses = [Paper, Lizard]
+    end
   end
 end
 
