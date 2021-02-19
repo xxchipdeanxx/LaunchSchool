@@ -80,12 +80,39 @@ end
 class Computer < Player
   def initialize(other_marker)
     super()
-    @marker = other_marker == "X" ? "O" : "X"
+    @oppoent_marker = other_marker
+    @marker = @oppoent_marker == "X" ? "O" : "X"
   end
 
   def place_marker(board)
-    random_square = board.available_squares.sample
-    board[random_square].contents = marker
+    if detect_win?(board)
+      set_winning_marker(board)
+    elsif detect_threat?(board)
+      set_defence_marker(board)
+    else
+      random_square = board.available_squares.sample
+      board[random_square].contents = marker
+    end
+  end
+
+  private
+
+  def detect_win?(board)
+    board.one_to_win?(marker)
+  end
+
+  def detect_threat?(board)
+    board.one_to_win?(@oppoent_marker)
+  end
+
+  def set_winning_marker(board)
+    square_to_win = (board.one_to_win?(marker) & board.available_squares).first
+    board[square_to_win].contents = marker
+  end
+
+  def set_defence_marker(board)
+    square_to_block = (board.one_to_win?(@oppoent_marker) & board.available_squares).first
+    board[square_to_block].contents = marker
   end
 end
 
@@ -139,6 +166,13 @@ class Board
     WINNING_LIINES.any? do |line|
       return 'X' if board.values_at(*line).all? { |squ| squ.contents == 'X' }
       return 'O' if board.values_at(*line).all? { |squ| squ.contents == 'O' }
+    end
+    nil
+  end
+
+  def one_to_win?(player_marker)
+    WINNING_LIINES.each do |line|
+      if board.values_at(*line).count(player_marker) == 2
     end
     nil
   end
@@ -311,9 +345,9 @@ class TTTGame
     end
   end
 
-  def winner(player)
-    player.wins.increment
-    puts "#{player} won!"
+  def winner(winning_player)
+    winning_player.wins.increment
+    puts "#{winning_player} won!"
   end
 
   def set_first_move
