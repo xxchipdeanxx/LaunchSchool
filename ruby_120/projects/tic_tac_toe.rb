@@ -175,24 +175,14 @@ class Score
 
   def initialize
     @score = 0
-    @@limit ||= set_limit
+    @@limit = nil
   end
 
   def self.limit
     @@limit
   end
 
-  def +(value)
-    self.score = self.score + 1
-  end
-
-  def ==(score_limit)
-    self.score == score_limit
-  end
-
-  private
-
-  def set_limit
+  def self.set_limit
     puts "How many rounds are needed to win? Max rounds: 10"
     rounds = nil
     loop do
@@ -200,7 +190,15 @@ class Score
       break if (1..10).include?(rounds)
       puts "Please enter a number between 1 and 10"
     end
-    rounds
+    @@limit = rounds
+  end
+
+  def increment
+    self.score += 1
+  end
+
+  def ==(score_limit)
+    score == score_limit
   end
 end
 
@@ -218,6 +216,7 @@ class TTTGame
     loop do
       display_welcome_message
       reset_scores
+      Score.set_limit
       main_game
       display_final_winner
       break unless play_again?
@@ -313,13 +312,13 @@ class TTTGame
   end
 
   def winner(player)
-    player.wins + 1
+    player.wins.increment
     puts "#{player} won!"
   end
 
   def set_first_move
     puts "Who should have the first move?: Player or Computer"
-    puts "Enter P for Player and C for Computer"
+    puts "Enter 'P' for Player and 'C' for Computer"
     first_move = nil
     loop do
       first_move = gets.chomp.downcase
