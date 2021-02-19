@@ -11,7 +11,7 @@ module TerminalControl
 
   def press_enter
     puts 'Press ENTER to continue:'
-    loop do 
+    loop do
       input = gets.chomp
       break if input.empty?
       puts 'Hm...something went wrong'
@@ -21,6 +21,7 @@ end
 
 class Player
   attr_accessor :marker, :name, :wins
+
   def initialize
     @name = set_name
     @wins = Score.new
@@ -29,9 +30,9 @@ class Player
   def to_s
     name
   end
-  
+
   private
-  
+
   def set_name
     puts "Please enter #{self.class} name"
     name = nil
@@ -181,14 +182,18 @@ class Score
     @@limit
   end
 
-  def +(increment)
-    self.score += increment
+  def +(value)
+    self.score = self.score + 1
+  end
+
+  def ==(score_limit)
+    self.score == score_limit
   end
 
   private
 
   def set_limit
-    puts "How many rounds would you like to play? Max rounds: 10"
+    puts "How many rounds are needed to win? Max rounds: 10"
     rounds = nil
     loop do
       rounds = gets.chomp.to_i
@@ -206,13 +211,17 @@ class TTTGame
   def initialize
     @player = Human.new
     @computer = Computer.new(player.marker)
-    @current_marker = player.marker
+    @current_marker = nil
   end
 
   def play
-    display_welcome_message
-    main_game
-    display_final_winner
+    loop do
+      display_welcome_message
+      reset_scores
+      main_game
+      display_final_winner
+      break unless play_again?
+    end
     dispay_goodbye_message
   end
 
@@ -231,11 +240,9 @@ class TTTGame
   def display_winner
     board.display
     if player.marker == board.winning_marker
-      player.wins + 1
-      puts "#{player} won!"
+      winner(player)
     elsif computer.marker == board.winning_marker
-      computer.wins + 1
-      puts "#{computer} won"
+      winner(computer)
     else
       puts "It's a tie"
     end
@@ -290,19 +297,41 @@ class TTTGame
 
   def reset
     initialize_board
-    self.current_marker = player.marker
+    self.current_marker = set_first_move
   end
 
   def score_limit_reached?
-    player.wins.score == Score.limit || computer.wins.score == Score.limit
+    player.wins == Score.limit || computer.wins == Score.limit
   end
 
   def display_final_winner
-   if player.wins.score == Score.limit
-    puts "#{player} won the game"
-   else
-    "#{computer} won the game"
-   end
+    if player.wins == Score.limit
+      puts "#{player} won the game"
+    else
+      "#{computer} won the game"
+    end
+  end
+
+  def winner(player)
+    player.wins + 1
+    puts "#{player} won!"
+  end
+
+  def set_first_move
+    puts "Who should have the first move?: Player or Computer"
+    puts "Enter P for Player and C for Computer"
+    first_move = nil
+    loop do
+      first_move = gets.chomp.downcase
+      break if %w(p c).include?(first_move)
+      puts "Please enter either 'P' or 'C'."
+    end
+    first_move == 'p' ? player.marker : computer.marker
+  end
+
+  def reset_scores
+    player.wins.score = 0
+    computer.wins.score = 0
   end
 end
 
