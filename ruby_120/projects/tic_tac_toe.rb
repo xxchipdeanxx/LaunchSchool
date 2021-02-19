@@ -85,6 +85,7 @@ class Computer < Player
   end
 
   def place_marker(board)
+    # binding.pry
     if detect_win?(board)
       set_winning_marker(board)
     elsif detect_threat?(board)
@@ -106,12 +107,12 @@ class Computer < Player
   end
 
   def set_winning_marker(board)
-    square_to_win = (board.one_to_win?(marker) & board.available_squares).first
+    square_to_win = board.one_to_win?(marker)
     board[square_to_win].contents = marker
   end
 
   def set_defence_marker(board)
-    square_to_block = (board.one_to_win?(@oppoent_marker) & board.available_squares).first
+    square_to_block = board.one_to_win?(@oppoent_marker)
     board[square_to_block].contents = marker
   end
 end
@@ -173,6 +174,10 @@ class Board
   def one_to_win?(player_marker)
     WINNING_LIINES.each do |line|
       if board.values_at(*line).count(player_marker) == 2
+        square_to_mark = (line & available_squares).last
+        next if square_to_mark.nil?
+        return square_to_mark if board[square_to_mark].empty?
+      end
     end
     nil
   end
