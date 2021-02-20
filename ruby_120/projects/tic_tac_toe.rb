@@ -1,5 +1,3 @@
-require 'pry'
-
 module TerminalControl
   def clear
     system('clear') || system('cls')
@@ -85,11 +83,12 @@ class Computer < Player
   end
 
   def place_marker(board)
-    # binding.pry
     if detect_win?(board)
-      set_winning_marker(board)
+      square_to_win = board.one_to_win?(marker)
+      board[square_to_win].contents = marker
     elsif detect_threat?(board)
-      set_defence_marker(board)
+      square_to_block = board.one_to_win?(@oppoent_marker)
+      board[square_to_block].contents = marker
     else
       random_square = board.available_squares.sample
       board[random_square].contents = marker
@@ -98,22 +97,13 @@ class Computer < Player
 
   private
 
+  # redundant methods, but kept for ease of reading
   def detect_win?(board)
     board.one_to_win?(marker)
   end
 
   def detect_threat?(board)
     board.one_to_win?(@oppoent_marker)
-  end
-
-  def set_winning_marker(board)
-    square_to_win = board.one_to_win?(marker)
-    board[square_to_win].contents = marker
-  end
-
-  def set_defence_marker(board)
-    square_to_block = board.one_to_win?(@oppoent_marker)
-    board[square_to_block].contents = marker
   end
 end
 
@@ -172,6 +162,8 @@ class Board
   end
 
   def one_to_win?(player_marker)
+    # returns the piece to win/block depending on input marker
+    # returns nil otherwise
     WINNING_LIINES.each do |line|
       if board.values_at(*line).count(player_marker) == 2
         square_to_mark = (line & available_squares).last
@@ -236,8 +228,8 @@ class Score
     self.score += 1
   end
 
-  def ==(score_limit)
-    score == score_limit
+  def ==(number)
+    score == number
   end
 end
 
@@ -346,7 +338,7 @@ class TTTGame
     if player.wins == Score.limit
       puts "#{player} won the game"
     else
-      "#{computer} won the game"
+      puts "#{computer} won the game"
     end
   end
 
