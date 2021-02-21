@@ -42,13 +42,14 @@ end
 class Participant
   include Hand
   attr_accessor :name, :cards
+
   def initialize
-    @name = get_name
+    @name = set_name
     @cards = []
   end
 
   def add_card(new_card)
-    if new_card.face == "Ace" && total + 11 > 21
+    if new_card.face == "Ace" && (total + 11 > 21)
       new_card.value = 1
     end
     cards << new_card
@@ -59,11 +60,11 @@ class Participant
   end
 
   def bust?
-    self.total > 21
+    total > 21
   end
 
   def black_jack?
-    self.total == 21
+    total == 21
   end
 
   def clear_cards
@@ -72,7 +73,7 @@ class Participant
 end
 
 class Player < Participant
-  def get_name
+  def set_name
     puts 'Please enter your name'
     name = nil
     loop do
@@ -86,7 +87,7 @@ end
 
 class Dealer < Participant
   NAMES = %w(Dealer Computer CPU)
-  def get_name
+  def set_name
     NAMES.sample
   end
 
@@ -102,6 +103,7 @@ end
 
 class Deck
   attr_accessor :cards
+
   def initialize
     @cards = nil
   end
@@ -114,13 +116,11 @@ class Deck
     deck = []
     Card::SUITS.each do |suit|
       Card::FACES.each do |face|
-        deck << Card.new(suit,face)
+        deck << Card.new(suit, face)
       end
     end
     self.cards = deck.shuffle!
   end
-
-  private
 end
 
 class Card
@@ -141,13 +141,13 @@ class Card
   private
 
   def apply_value(face)
-    if /[[:digit:]]/.match?(face)
-      self.value = face.to_i
-    elsif face == 'Ace'
-      self.value = 11
-    else
-      self.value = 10
-    end  
+    self.value = if /[[:digit:]]/.match?(face)
+                   face.to_i
+                 elsif face == 'Ace'
+                   11
+                 else
+                   10
+                 end
   end
 end
 
@@ -157,9 +157,7 @@ class Game
 
   def initialize
     @deck = Deck.new
-    @player = Player.new
-    @dealer = Dealer.new
-    @participants = [@player, @dealer]
+    @participants = [@player = Player.new, @dealer = Dealer.new]
   end
 
   def play
@@ -189,6 +187,7 @@ class Game
     loop do
       input = gets.chomp.downcase
       break if %w(y yes n no).include?(input)
+      puts "Please enter 'Y' or 'N'."
     end
     %w(y yes).include?(input)
   end
@@ -206,11 +205,11 @@ class Game
       player.show_hand
       decision = hit_or_stay
       case decision
-      when 'h' || 'hit' then draw(player)
-      when 's' || 'stay' then break
+      when 'h' then draw(player)
+      when 's' then break
       end
     end
-  end 
+  end
 
   def dealer_turn
     loop do
@@ -236,7 +235,7 @@ class Game
   end
 
   def display_winner
-    winner = player.total > dealer.total ? "#{player}" : "#{dealer}"
+    winner = player.total > dealer.total ? player.to_s : dealer.to_s
     puts "#{winner} has won this hand"
   end
 
@@ -245,7 +244,7 @@ class Game
   end
 
   def display_bust
-    busted = player.bust? ? "#{player}" : "#{dealer}"
+    busted = player.bust? ? player.to_s : dealer.to_s
     puts "#{busted} has gone bust!"
   end
 
@@ -255,7 +254,7 @@ class Game
     answer = nil
     loop do
       answer = gets.chomp.downcase
-      break if %w(h s hit stay).include?(answer)
+      break if %w(h s).include?(answer)
       puts 'Please enter a valid selection'
     end
     answer
@@ -293,4 +292,3 @@ end
 
 game = Game.new
 game.play
-
