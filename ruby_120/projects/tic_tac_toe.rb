@@ -18,11 +18,11 @@ module TerminalControl
 end
 
 class Player
-  attr_accessor :marker, :name, :wins
+  attr_accessor :marker, :name, :score
 
   def initialize
     @name = set_name
-    @wins = Score.new
+    @score = Score.new
   end
 
   def to_s
@@ -54,7 +54,7 @@ class Human < Player
     puts "Please select a square: #{board.available_squares}"
     selection = nil
     loop do
-      selection = gets.chomp.to_i
+      selection = validate_num(gets.chomp)
       break if board.available_squares.include?(selection)
       puts 'Whoops! Please select an available square'
     end
@@ -73,6 +73,11 @@ class Human < Player
     end
     self.marker = marker.upcase
   end
+
+  def validate_num(input)
+    # ensures no 0 or float nubers ca be passed
+    return input.to_i if input.to_i.to_s == input
+  end
 end
 
 class Computer < Player
@@ -84,10 +89,10 @@ class Computer < Player
 
   def place_marker(board)
     if detect_win?(board)
-      square_to_win = board.one_to_win?(marker)
+      square_to_win = board.find_square_to_win(marker)
       board[square_to_win].contents = marker
     elsif detect_threat?(board)
-      square_to_block = board.one_to_win?(@oppoent_marker)
+      square_to_block = board.find_square_to_win(@oppoent_marker)
       board[square_to_block].contents = marker
     else
       random_square = board.available_squares.sample
@@ -99,11 +104,11 @@ class Computer < Player
 
   # redundant methods, but kept for ease of reading
   def detect_win?(board)
-    board.one_to_win?(marker)
+    board.find_square_to_win(marker)
   end
 
   def detect_threat?(board)
-    board.one_to_win?(@oppoent_marker)
+    board.find_square_to_win(@oppoent_marker)
   end
 end
 
@@ -161,7 +166,7 @@ class Board
     nil
   end
 
-  def one_to_win?(player_marker)
+  def find_square_to_win(player_marker)
     # returns the piece to win/block depending on input marker
     # returns nil otherwise
     WINNING_LIINES.each do |line|
@@ -218,7 +223,7 @@ class Score
     rounds = nil
     loop do
       rounds = gets.chomp.to_i
-      break if (1..10).include?(rounds)
+      break if (1..10).include?(rounds) && rounds.integer?
       puts "Please enter a number between 1 and 10"
     end
     @@limit = rounds
@@ -230,6 +235,10 @@ class Score
 
   def ==(number)
     score == number
+  end
+
+  def reset
+    self.score = 0
   end
 end
 
@@ -331,19 +340,19 @@ class TTTGame
   end
 
   def score_limit_reached?
-    player.wins == Score.limit || computer.wins == Score.limit
+    player.score == Score.limit || computer.score == Score.limit
   end
 
   def display_final_winner
-    if player.wins == Score.limit
-      puts "#{player} won the game"
+    if player.score == Score.limit
+      puts "#{player} has won #{Score.limit} rounds and is the grand winner."
     else
-      puts "#{computer} won the game"
+      puts "#{computer} won #{Score.limit} rounds and is the grand winner."
     end
   end
 
   def winner(winning_player)
-    winning_player.wins.increment
+    winning_player.score.increment
     puts "#{winning_player} won!"
   end
 
@@ -360,8 +369,8 @@ class TTTGame
   end
 
   def reset_scores
-    player.wins.score = 0
-    computer.wins.score = 0
+    player.score.reset
+    computer.score.reset
   end
 end
 

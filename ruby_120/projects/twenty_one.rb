@@ -109,7 +109,7 @@ class Deck
   end
 
   def draw_one
-    cards.sample
+    cards.pop
   end
 
   def generate_new
@@ -161,8 +161,8 @@ class Game
   end
 
   def play
+    display_welcome_message
     loop do
-      display_welcome_message
       reset
       initial_deal
       display_flop
