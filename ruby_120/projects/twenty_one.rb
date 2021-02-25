@@ -125,7 +125,7 @@ end
 
 class Card
   SUITS = %w(Hearts Spades Clubs Diamonds)
-  FACES = ('1'..'9').to_a + %w(King Queen Jack Ace)
+  FACES = ('2'..'10').to_a + %w(King Queen Jack Ace)
   attr_accessor :suit, :face, :value
 
   def initialize(suit, face)
