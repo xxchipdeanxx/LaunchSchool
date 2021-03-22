@@ -89,6 +89,7 @@ hanz.lvl_up
 puts ''
 hanz.show_inventory
 
+
 #Unrelated classes able to be easily upgraded through a common interface
 #that will behave differently based the the applicable Player stat
 
