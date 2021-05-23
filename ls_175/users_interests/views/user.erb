@@ -1,0 +1,22 @@
+<div class="basic-info"
+  <h2><%="#{@name.capitalize}'s Info:"%></h2>
+    <ul>
+      <li>
+        <p>Email: <%=@user[:email]%></p>
+      </li>
+      <li>
+        <p>Interests: <%=show_interests(@name)%></p>
+      </li>
+    </ul>
+</div>
+
+<div class="other-users">
+  <h2>Other Users</h2>
+    <% each_user(select_other_users(@name)) do |name, _ , _| %>
+      <ul>
+        <li>
+          <a href="/user/<%=name%>"><%=name%></a>
+        </li>
+      </ul>
+    <%end%> 
+</div>
