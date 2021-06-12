@@ -1,0 +1,66 @@
+body {
+  font: normal 15px "PT Sans", Helvetica, Arial, sans-serif;
+}
+
+h1 {
+  font: normal 25px "PT Sans", Helvetica, Arial, sans-serif;
+}
+
+h2 {
+  font: normal 25px "PT Sans", Helvetica, Arial, sans-serif;
+  padding: 10px;
+}
+
+.flash {
+  max-width: 960px;
+  padding: 10px 20px;
+  margin: 20px;
+  font-size: 25px;
+}
+
+.flash.error {
+  border: 1px solid transparent;
+  color: #575454;
+  background: #f1ef75;
+
+}
+
+.flash.success {
+  border: 1px solid transparent;
+  color: #a5a2a2;
+  background: #437897;
+}
+
+ul {
+  margin-left: 40px;
+  margin-top: 20px;
+}
+
+li {
+  list-style: disc;
+}
+
+div.actions{
+  padding: 10px;
+}
+
+div.login {
+  padding: 10px;
+}
+
+form.inline {
+  display: inline;
+}
+
+button.inline {
+  display: inline;
+}
+
+p.signin {
+  padding: 10px;
+}
+
+button.signin {
+  padding: 10px;
+}
+

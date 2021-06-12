@@ -1,0 +1,8 @@
+<h2><%= @existing_name %> Duplication Page</h2>
+<form action="/duplicate" method="post">
+  <label for="content">Please enter a filename for the duplicate:</label>
+  <div>
+    <input type="text" name="dup_filename" value="<%= session[:dup_filename] || gen_dup_name(session[:existing_name]) %>" size="50">
+  </div>
+  <button type="submit">Duplicate</button>
+<form>

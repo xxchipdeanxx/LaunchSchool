@@ -1,0 +1,14 @@
+<div class="login">
+  <form action="/upload" method="post">
+    <p>Please enter the desired filename (no extensions necessary):
+      <input type="text" name="filename" value="<%= params[:filename] || '' %>">
+    </p>
+    <p>Paste the URL to the image here:
+      <input type="text" name="url" value="<%= params[:url] || '' %>">
+    </p>
+    
+    <div>
+      <button type='submit'>Upload Image</button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,10 @@
+<form method="post" action="/users/signin">
+  <p class="signin">
+    Username: <input class="inline" type="text" name="username" value="<%= @user_name || '' %>" size=25 />
+  </p>
+  <p class="signin">
+    Password: <input class='inline' type="password" name="password" size=25 />
+  </p>
+
+  <button type="submit">Sign In</button>
+</form>

@@ -1,0 +1,51 @@
+<div>
+  <button class="new_user">
+  </button>
+</div>
+
+<div class='file list'>
+  <ul>
+    <% sorted_files.each do |file| %>
+      <li>
+        <a href="/<%= file %>"><%= file %></a>
+        <% unless file.include?(".jpg") %>
+          <button class="inline">
+            <a href="/<%= file %>/edit">Edit</a>
+          </button>
+        <% end %>
+        <form class='inline' method="post" action="/<%= file %>/delete">
+          <button type="submit">Delete</button>
+        </form>
+        <button class="inline">
+          <a href="/<%= file %>/duplicate">Duplicate</a>
+        </button>
+      </li>
+    <% end %>
+  </ul>
+</div>
+
+<div class="actions">
+  <button>
+    <a href="/new">New Document</a>
+  </button>
+
+  <button>
+    <a href="/upload">Upload Image</a>
+  </button>
+</div>
+
+<div class="login">
+  <% if session[:user].nil? %>
+    <button>
+      <a href="/users/signin">Sign In</a>
+    </button>
+    <button>
+      <a href="/users/signup">Sign Up</a>
+    </button>
+  <% else %>
+    <form class="inline" method="post" action="/users/signout">
+      <label for="logout"><em>Signed in as <%= session[:user] %><em></label>
+      <button type="submit">Sign Out</button>
+    </form>
+  <% end %>
+</div>
